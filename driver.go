@@ -20,6 +20,7 @@ import (
 	"encoding/json"
 	"strconv"
 	"math"
+	"strings"
 )
 
 // An mapped version of logger.Message where Line is a String, not a byte array
@@ -161,12 +162,14 @@ func writeLogsToKafka(lf *logPair, topic string, keyStrategy KeyStrategy, tag st
 	dec := protoio.NewUint32DelimitedReader(lf.stream, binary.BigEndian, 1e6)
 	defer dec.Close()
 	var buf logdriver.LogEntry
+
+	var partialBuffer string
 	for {
 		// Check if there are any Kafka errors thus far
 		select {
 			case kafkaErr := <- lf.producer.Errors():
 				// In the event of an error, continue to attempt to write messages
-				logrus.Error("error recieved from Kafka", kafkaErr)
+				logrus.Error("error received from Kafka", kafkaErr)
 			default:
 				//No errors, continue
 		}
@@ -177,11 +180,31 @@ func writeLogsToKafka(lf *logPair, topic string, keyStrategy KeyStrategy, tag st
 				lf.stream.Close()
 				return
 			}
+			logrus.WithField("id", lf.info.ContainerID).WithError(err).Error("error whilst reading from log")
 			dec = protoio.NewUint32DelimitedReader(lf.stream, binary.BigEndian, 1e6)
 		}
 
+		lineAsString := string(buf.Line)
+
+		// In the event that the message is partial, we attempt to aggregate if possible
+		switch {
+			case buf.Partial:
+				logrus.WithField("line", lineAsString).WithField("buffer", partialBuffer).Debug("Received partial message, start reconstruction")
+				fallthrough
+			case len(partialBuffer) > 0 && !strings.HasSuffix(lineAsString, "\n"):
+				logrus.WithField("line", lineAsString).WithField("buffer", partialBuffer).Debug("Received partial message, continue reconstruction")
+				partialBuffer += lineAsString
+				continue
+			case len(partialBuffer) > 0 && strings.HasSuffix(lineAsString, "\n"):
+				logrus.WithField("line", lineAsString).WithField("buffer", partialBuffer).Debug("Received partial message, finish reconstruction")
+				// Add the remaining line to the buffer and reset the line to be the total buffer size
+				partialBuffer += lineAsString
+				lineAsString = partialBuffer
+				partialBuffer = ""
+		}
+
 		var msg LogMessage
-		msg.Line = string(buf.Line)
+		msg.Line = lineAsString
 		msg.Source = buf.Source
 		msg.Partial = buf.Partial
 		msg.Timestamp = time.Unix(0, buf.TimeNano)

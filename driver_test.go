@@ -63,6 +63,24 @@ func TestConsumesMultipleLogMessagesFromDocker(t *testing.T) {
 	assertLineMatch(t, "delta", <-producer.Successes())
 }
 
+func TestAggregatesPartialLogMessagesFromDocker(t *testing.T) {
+	producer := NewProducer(t)
+	defer producer.Close()
+
+	stream := createBufferForLogMessages([]logdriver.LogEntry{
+		newPartialLogEntry("alpha"),
+		newLogEntry("beta"),
+		newLogEntry("charlie\n"),
+	})
+
+	lf := createLogPair(producer, stream)
+
+	producer.ExpectInputAndSucceed()
+	writeLogsToKafka(&lf, "topic", KEY_BY_TIMESTAMP, TAG)
+
+	assertLineMatch(t, "alphabetacharlie\n", <-producer.Successes())
+}
+
 func TestJsonIncludesContainerInformation(t *testing.T) {
 	expectedContainerId := "containerid1"
 	expectedContainerName := "containername1"
@@ -440,3 +458,10 @@ func newLogEntry(line string) logdriver.LogEntry {
 	le.TimeNano = time.Now().UnixNano()
 	return le
 }
+
+func newPartialLogEntry(line string) logdriver.LogEntry {
+	le := newLogEntry(line)
+	le.Partial = true
+	return le
+}
+
