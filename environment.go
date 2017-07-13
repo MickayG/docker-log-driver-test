@@ -185,7 +185,7 @@ func getEnvVarOrDefault(logCtx logger.Info, envVarName string, defaultValue stri
 
 func getHostname() string {
 	hostname, err := os.Hostname()
-	if err {
+	if err == nil {
 		//In the event that an error occured, set the hostname to an empty string as we're unable to retrieve it
 		hostname = ""
 
