@@ -16,7 +16,7 @@ import (
 	"io/ioutil"
 	"encoding/json"
 	"strconv"
-
+	"os"
 )
 
 
@@ -95,6 +95,26 @@ func TestJsonIncludesContainerInformation(t *testing.T) {
 	assert.Equal(t, expectedContainerImageName, outMsg.ContainerImageName)
 }
 
+func TestJsonIncludesHostname(t *testing.T) {
+	expectedHostname,_ := os.Hostname()
+
+	producer := NewProducer(t)
+	defer producer.Close()
+
+	logMsg := newLogEntry("alpha")
+
+	stream := createBufferForLogMessages([]logdriver.LogEntry{logMsg})
+
+	lf := createLogPair(producer, stream)
+
+	producer.ExpectInputAndSucceed()
+	writeLogsToKafka(&lf, "topic", KEY_BY_TIMESTAMP, TAG)
+
+	recvMsg := <-producer.Successes()
+	outMsg := unmarshallMessage(recvMsg, t)
+	assert.Equal(t, expectedHostname, outMsg.Hostname)
+}
+
 func TestTagCanBeOverridenWithEnvironmentVariable(t *testing.T) {
 	overrideTag := "overide"
 	defaultTag := "default"
@@ -168,7 +188,6 @@ func TestTopicIsContainerIdWhenWanted(t *testing.T) {
 func TestReadingSingleLineFromOnePartition(t *testing.T) {
 	config := sarama.NewConfig()
 	consumer := mocks.NewConsumer(t, config)
-
 
 	expectedLine := "alpha"
 	expectedSource := "stdout"

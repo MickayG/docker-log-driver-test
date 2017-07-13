@@ -32,6 +32,7 @@ type LogMessage struct {
 	ContainerId        string
 	ContainerImageName string
 	ContainerImageId   string
+	Hostname           string
 	Tag                string
 
 	// Err is an error associated with a message. Completeness of a message
@@ -188,6 +189,7 @@ func writeLogsToKafka(lf *logPair, topic string, keyStrategy KeyStrategy, tag st
 		msg.ContainerName = lf.info.ContainerName
 		msg.ContainerImageName = lf.info.ContainerImageName
 		msg.ContainerImageId = lf.info.ContainerImageID
+		msg.Hostname = getHostname()
 		msg.Tag = tag
 
 		err := WriteMessage(topic, msg, lf.info.ContainerID, keyStrategy, lf.producer)

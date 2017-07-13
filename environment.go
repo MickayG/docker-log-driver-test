@@ -182,3 +182,16 @@ func getEnvVarOrDefault(logCtx logger.Info, envVarName string, defaultValue stri
 	}
 	return value
 }
+
+func getHostname() string {
+	hostname, err := os.Hostname()
+	if err {
+		//In the event that an error occured, set the hostname to an empty string as we're unable to retrieve it
+		hostname = ""
+
+		//Only log at debug level, we don't want to flood the system if this should happen for a particular reason (permissions perhaps?)
+		logrus.WithField("err", err).Debug("Unable to retrieve hostname")
+	}
+
+	return hostname
+}
