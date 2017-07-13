@@ -113,6 +113,7 @@ Each log message will be written to a single Kafka message. The message within K
 	"ContainerId": "be2af19df661fb08561a8a99c734f637f9dc1397c43d88379479fceb5fc0666d",
 	"ContainerImageName": "hello-world",
 	"ContainerImageId": "sha256:48b5124b2768d2b917edcb640435044a97967015485e812545546cbed5cf0233",
+	"Hostname": "docker-master",
 	"Tag": "common",
 	"Err": null
 }
@@ -130,6 +131,7 @@ Each log message will be written to a single Kafka message. The message within K
  | ContainerId | Id of the container that generated the log message |
  | ContainerImageName | Name of the container's image |
  | ContainerImageId | ID of the container's image |
+ | Hostname | Hostname of the server running the container |
  | Tag | The log tag |
  | Err | Usually null, otherwise will be a string containing and error from the logdriver |
 
