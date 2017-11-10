@@ -88,8 +88,8 @@ For example, to change the topic to "logs"
 Certain global configurations can be overridden on a per-container basis with container environment variables.
 For example containers can be configured to write to different topics:
 ```
-docker run --log-driver mickyg/kafka-logdriver:latest -e LOGGING_KAFKA_TOPIC=alphalogs --name "Alpha" hello-world
-docker run --log-driver mickyg/kafka-logdriver:latest -e LOGGING_KAFKA_TOPIC=betalogs --name "Beta" hello-world
+docker run --log-driver mickyg/kafka-logdriver:latest -e LOG_TOPIC=alphalogs --name "Alpha" hello-world
+docker run --log-driver mickyg/kafka-logdriver:latest -e LOG_TOPIC=betalogs --name "Beta" hello-world
 ```
 The logs from the container "Alpha" will be written to "alphalogs", the logs from container "beta" will be written to "betalogs"
 
